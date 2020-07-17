@@ -1,4 +1,4 @@
-function update_3state_with_SRX_and_energy_barrier(obj,time_step);
+function update_3state_with_SRX_and_energy_barrier(obj,time_step, m_props);
 % Function updates kinetics for thick and thin filaments based on 3 state
 % SRX model descripbed by Campbell et al, 2018
 
@@ -7,6 +7,19 @@ y = obj.myofilaments.y;
 
 % Get the overlap
 N_overlap = return_f_overlap(obj);
+
+% Pull out forces from neighboring hs
+no_of_half_sarcomeres = numel(m_props.hs_passive_force);
+
+z = m_props.hs_bound_cb;
+switch (obj.hs_id)
+    case 1
+        inter_act_force = 2*z(obj.hs_id) + z(obj.hs_id+1);
+    case no_of_half_sarcomeres
+        inter_act_force = 2*z(obj.hs_id) + z(obj.hs_id-1);
+    otherwise
+        inter_act_force = z(obj.hs_id-1) + z(obj.hs_id) + z(obj.hs_id+1);
+end
 
 % Pre-calculate rate
 r1 = min([obj.parameters.max_rate ...
@@ -17,6 +30,8 @@ r3 = obj.parameters.k_3 * ...
             exp(-obj.parameters.k_cb * (obj.myofilaments.x).^2 / ...
                 (2 * 1e18 * obj.parameters.k_boltzmann * ...
                     obj.parameters.temperature));
+r3 = (1 + obj.parameters.k_on_f_pas * inter_act_force)*r3;
+
 r3(r3>obj.parameters.max_rate)=obj.parameters.max_rate;
 r4 = obj.parameters.k_4_0 * ...
         exp((obj.parameters.k_cb * ...
@@ -24,6 +39,10 @@ r4 = obj.parameters.k_4_0 * ...
             (2 * 1e18 * obj.parameters.k_boltzmann * ...
                     obj.parameters.temperature));
 r4(r4>obj.parameters.max_rate)=obj.parameters.max_rate;
+
+r_on = obj.parameters.k_on * obj.Ca;
+
+r_off = obj.parameters.k_off;
 
 % Evolve the system
 [t,y_new] = ode23(@derivs,[0 time_step],y,[]);
@@ -59,9 +78,9 @@ obj.rate_structure.r4 = r4;
         J2 = r2 * M2;
         J3 = r3 .* obj.myofilaments.bin_width * M2 * (N_on - N_bound);
         J4 = r4 .* M3';
-        J_on = obj.parameters.k_on * obj.Ca * (N_overlap - N_on) * ...
+        J_on = r_on * (N_overlap - N_on) * ...
                 (1 + obj.parameters.k_coop * (N_on/N_overlap));
-        J_off = obj.parameters.k_off * (N_on - N_bound) * ...
+        J_off = r_off * (N_on - N_bound) * ...
                 (1 + obj.parameters.k_coop * ((N_overlap - N_on)/N_overlap));
             
         % Calculate the derivs

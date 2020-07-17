@@ -5,6 +5,7 @@ classdef muscle < handle
         % muscle class
         
         no_of_half_sarcomeres;
+        series_k_linear_per_hs;
         series_k_linear;
         muscle_length;
         series_extension = 0;
@@ -41,10 +42,15 @@ classdef muscle < handle
                     muscle_props.(muscle_field_names{i});
             end
             
+            % Correct the series compliance for the number of
+            % half-sarcomeres
+            obj.series_k_linear = obj.series_k_linear_per_hs / ...
+                obj.no_of_half_sarcomeres;
+            
             % Now create half_sarcomeres, updating muscle length as we go
             obj.muscle_length = 0;
             for hs_counter = 1:obj.no_of_half_sarcomeres
-                obj.hs(hs_counter) = half_sarcomere(hs_props);
+                obj.hs(hs_counter) = half_sarcomere(hs_props, hs_counter);
                 obj.muscle_length = obj.muscle_length + ...
                     obj.hs(hs_counter).hs_length;
             end
@@ -62,14 +68,14 @@ classdef muscle < handle
 
             % Implement force balance in length control mode for the
             % initialisation step
-            impose_force_balance(obj,-2);
+            impose_force_balance(obj,-2,1);
         end
         
         % Other methods
-        obj = impose_force_balance(obj,mode_value);
+        [obj, delta_hsl] = impose_force_balance(obj, mode_value, time_step);
         series_extension = return_series_extension(obj,muscle_force);
         series_force = return_series_force(obj,series_extension);
-        implement_time_step(obj,time_step,delta_hsl,Ca_value,Mode_value);
+        implement_time_step(obj,time_step,delta_hsl,Ca_value,Mode_value, kinetic_scheme);
     end
 end
             
