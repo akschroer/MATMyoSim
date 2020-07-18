@@ -8,7 +8,10 @@ p = p.Results;
 opt_structure = p.opt_structure;
 
 % Pull out initial p_vector
-p_vector = extract_p_data_from_opt_structure(opt_structure);
+p_vector = [];
+for i=1:numel(opt_structure.parameter)
+    p_vector(i) = opt_structure.parameter{i}.p_value;
+end
 
 % Set up for optimization
 best_e = inf;
@@ -17,15 +20,15 @@ y_best = [];
 best_p = p_vector;
 
 fh = @(x)run_trial(x, opt_structure);
-% 
-% s.solver = 'particleswarm';
-% s.objective = fh;
-% s.nvars = numel(p_vector);
-% s.lb = zeros(numel(p_vector),1);
-% s.ub = ones(numel(p_vector),1);
-% s.options = optimoptions('particleswarm','Display','iter');
-% 
-% % particleswarm(s);
+
+s.solver = 'particleswarm';
+s.objective = fh;
+s.nvars = numel(p_vector);
+s.lb = zeros(numel(p_vector),1);
+s.ub = ones(numel(p_vector),1);
+s.options = optimoptions('particleswarm','Display','iter');
+
+% particleswarm(s);
 
 fminsearch(fh, p_vector);
 % n = numel(p_vector);
@@ -46,25 +49,23 @@ fminsearch(fh, p_vector);
         
         if (e <= best_e)
             best_e = e;
-            y_best = y_attempt;
+            y_best = y_attempt
             best_p = p_vector;
-            
-            % Copy model files to best folder
-            for i = 1 : numel(opt_structure.job)
-                full_file_string = ...
-                    fullfile(cd, opt_structure.job{i}.model_file_string);
-                [~, a, b] =fileparts(full_file_string);
-                file_string = sprintf('%s%s',a,b);
-                new_file_string = ...
-                    fullfile(cd, opt_structure.best_model_folder, file_string);
-                if (~isdir(fileparts(new_file_string)))
-                    mkdir(fileparts(new_file_string));
-                end
-                copyfile(full_file_string, new_file_string);
-            end
+            copyfile(opt_structure.model_working_file_string, ...
+                opt_structure.best_model_file_string);
             
             % Update best_opt_file
-            update_best_opt_file(opt_structure, p_vector);
+            best_opt_job = opt_structure;
+            for i=1:numel(p_vector)
+                best_opt_job.parameter{i}.p_value = p_vector(i);
+            end
+            out_string = savejson('MyoSim_optimization', best_opt_job);
+            of = fopen(opt_structure.best_opt_file_string,'w');
+            fprintf(of,'%s',out_string);
+            fclose(of);
+            
+            
+            
         end
         
         % Update figures

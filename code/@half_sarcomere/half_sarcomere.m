@@ -4,8 +4,6 @@ classdef half_sarcomere < handle
         % These are properties that can be accessed from outside the
         % half-sarcomere class
         
-        hs_id;  
-        
         hs_length = 1050;   % the length of the half-sarcomere in nm
         hs_force = 0;       % the stress (in N m^(-2)) in the half-sarcomere
 
@@ -13,9 +11,8 @@ classdef half_sarcomere < handle
         f_on;
         f_bound;
         
-        cb_force = 0;
-        passive_force = 0;
-        viscous_force = 0;
+        cb_force;
+        passive_force;
         
         state_pops;
         
@@ -54,9 +51,6 @@ classdef half_sarcomere < handle
             end
             
             hs_props = varargin{1};
-            
-            % Set id
-            obj.hs_id = varargin{2};
             
             % Set kinetic_scheme
             obj.kinetic_scheme = hs_props.kinetic_scheme;
@@ -132,11 +126,7 @@ classdef half_sarcomere < handle
                         class(obj.parameters.(parameter_field_names{i}));
                 end
             end
-            
-            % Set viscosity to 0 if missing from parameters
-            if (~isfield(obj.parameters, 'viscosity'))
-                obj.parameters.viscosity = 0;
-            end
+
             
             % Initialise forces
             obj.cb_force = 0;
@@ -152,24 +142,21 @@ classdef half_sarcomere < handle
         f_overlap = return_f_overlap(obj);
         pf = return_passive_force(obj,hsl);
         
-        evolve_kinetics(obj, time_step, m_props);
+        evolve_kinetics(obj,time_step);
         
         update_2state_with_poly(obj, time_step);
         update_3state_with_SRX(obj, time_step);
-        update_3state_with_SRX_and_k_thin_force(obj, time_step, m_props);
         update_3state_with_SRX_and_exp_k4(obj, time_step);
-        update_3state_with_SRX_and_energy_barrier(obj, time_step, m_props);
-        update_3state_with_SRX_sig_walls_and_inter_hs(obj, time_step, m_props);
-        update_4state_with_SRX(obj, time_step, m_props);
+        update_3state_with_SRX_and_energy_barrier(obj, time_step);
+        update_4state_with_SRX(obj, time_step);
         update_4state_with_SRX_and_exp_k7(obj, time_step);
         
         move_cb_distribution(obj, delta_hsl);
-        update_forces(obj, time_step, delta_hsl);
+        update_forces(obj);
         
-        check_new_force(obj, new_length, time_step);
+        check_new_force(obj,new_length);
 
-        implement_time_step(obj,time_step,delta_hsl, ...
-            Ca_concentration, m_props);
+        implement_time_step(obj,time_step,delta_hsl,Ca_concentration);
         
     end
 end
