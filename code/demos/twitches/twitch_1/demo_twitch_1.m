@@ -3,7 +3,7 @@ function demo_twitch_1
 % held isometric and activated by a transient pulse of Ca2+
 
 % Variables
-protocol_file_string = 'protocol.txt';
+protocol_file_string = 'protocol_1s.txt';
 model_parameters_json_file_string = 'twitch_1_model.json';
 options_file_string = 'twitch_1_options.json';
 model_output_file_string = '../../temp\twitch_1_output.myo';
@@ -24,9 +24,17 @@ sim_output = sim.sim_output
 
 figure(3);
 clf;
-subplot(2,1,1);
+subplot(3,1,1);
 plot(sim_output.time_s,sim_output.muscle_force,'b-');
 ylabel('Force (N m^{-2})');
-subplot(2,1,2);
+subplot(3,1,2);
 plot(sim_output.time_s,sim_output.hs_length,'b-');
 ylabel('Half-sarcomere length (nm)');
+subplot(3,1,3);
+plot(sim_output.time_s,sim_output.M1,'b-');
+ylabel('Myosin in SRX (M_{OFF})');
+max(sim_output.M1)
+max(sim_output.M2)
+max(sim_output.M3)
+max(sim_output.M4)
+

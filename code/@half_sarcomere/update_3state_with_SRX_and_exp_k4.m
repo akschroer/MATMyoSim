@@ -22,10 +22,15 @@ r3 = obj.parameters.k_3 * ...
                     obj.parameters.temperature));
 r3(r3>obj.parameters.max_rate)=obj.parameters.max_rate;
 
-r4 = obj.parameters.k_4_0 * exp(-obj.parameters.k_4_1 * (obj.myofilaments.x));% - obj.parameters.x_ps/2
-if obj.myofilaments.x > 8
-    r4=obj.parameters.max_rate;
-end
+r4 = obj.parameters.k_4_0 * exp(-obj.parameters.k_4_1 * obj.myofilaments.x);
+%if obj.myofilaments.x > 8
+    r4(r4>(obj.parameters.k_4_0 * exp(obj.parameters.k_4_1*7.95))) = ...
+        obj.parameters.k_4_0 * exp(-obj.parameters.k_4_1 * obj.myofilaments.x(obj.myofilaments.x<-7.95))-...
+        (obj.myofilaments.x(obj.myofilaments.x<-7.95)+7.95)*obj.parameters.max_rate;
+    r4(r4<(obj.parameters.k_4_0 * exp(-obj.parameters.k_4_1*7.95))) = ...
+        obj.parameters.k_4_0 * exp(-obj.parameters.k_4_1 * obj.myofilaments.x(obj.myofilaments.x>7.95))+...
+        (obj.myofilaments.x(obj.myofilaments.x>7.95)-7.95)*obj.parameters.max_rate;
+%end
 r4(r4>obj.parameters.max_rate)=obj.parameters.max_rate;
 
 % Evolve the system
